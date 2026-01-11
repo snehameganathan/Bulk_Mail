@@ -37,7 +37,9 @@ app.post("/sendmail",function(req,res){
     credential.find().then(function(data){
         
         const transporter = nodemailer.createTransport({
-            service: "gmail",
+            host: "smtp.gmail.com",
+            port: 465,
+            secure: true,
             auth: {
             user: data[0].user,
             pass: data[0].pass,
@@ -66,11 +68,13 @@ app.post("/sendmail",function(req,res){
             }
         }).then(function(){
             res.send(true)
-        }).catch(function(){
+        }).catch(function(error){
+            console.error("EMAIL ERROR:", error);
             res.send(false)
         })
         
     }).catch(function(error){
+
         console.log(error)
     })
     
