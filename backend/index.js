@@ -29,60 +29,47 @@ const credential = mongoose.model("credential",credentialSchema,"bulkmail")
 
 
 
-app.post("/sendmail",function(req,res){
-
-    var msg = req.body.msg
-    var emailList = req.body.emailList
-
-    credential.find().then(function(data){
-        
-        const transporter = nodemailer.createTransport({
-            host: "smtp.gmail.com",
-            port: 465,
-            secure: true,
-            auth: {
-            user: data[0].user,
-            pass: data[0].pass,
-          },
+app.post("/sendmail", async function (req, res) {
+    try {
+      const { msg, emailList } = req.body;
+  
+      const data = await credential.find();
+  
+      if (!data.length) {
+        console.error("No credentials found in DB");
+        return res.send(false);
+      }
+  
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: {
+          user: data[0].user,
+          pass: data[0].pass,
+        },
+      });
+  
+      for (let i = 0; i < emailList.length; i++) {
+        await transporter.sendMail({
+          from: data[0].user,
+          to: emailList[i],
+          subject: "Message from Bulk Mail App",
+          text: msg,
         });
+      }
+  
+      res.send(true);
+  
+    } catch (error) {
+      // ✅ THIS IS WHERE THE CATCH GOES
+      console.error("REAL EMAIL ERROR 👉", error.message);
+      console.error(error); // full nodemailer error
+      res.send(false);
+    }
     
-        new Promise(async function(resolve,reject){
-            try
-            {
-                for(var i=0; i<emailList.length;i++)
-                {
-                    await transporter.sendMail(
-                        {
-                            from: data[0].user,
-                            to:emailList[i],
-                            subject: " Message from Bulk Mail App",
-                            text:msg
-                        }            
-                    )  
-                
-                }
-                resolve("Success")
-            }
-            catch(error){
-                reject("Failed")
-            }
-        }).then(function(){
-            res.send(true)
-        }).catch(function(error){
-            console.error("EMAIL ERROR:", error);
-            res.send(false)
-        })
-        
-    }).catch(function(error){
-
-        console.log(error)
-    })
-    
-
-    
-
-    
-})
+  });
+  
     
 
 const PORT = process.env.PORT || 5000;
